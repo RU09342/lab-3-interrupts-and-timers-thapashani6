@@ -1,12 +1,20 @@
-# Button Based Delay
-Now that you have begun to familiarize yourself with the TIMER modules, why don't we make an interesting change to our code from the last lab.
+## Shani Thapa
+* Added Code on 10/9
+* Populated README on 10/10
 
-## Task
-Setup your microcontroller to initially blink and LED at a rate of 10Hz upon restarting or powering up. Then utilizing one of the buttons on board, a user should be able to set the delay or blinking rate of the LED by holding down a button. The duration in which the button is depressed should then become the new rate at which the LED blinks. As previously stated, you most likely will want to take advantage of the fact that TIMER modules exist and see if you can let them do a bulk of the work for you.
+### Code
+In this lab, the LED has to intially blink at a rate of 10Hz. Then when a button is pressed, the LED should change the rate of its blinking. Two timers are needed. One has its CCR set to the initial rate of 10Hz to blink an LED. The second timer is setup but starts in STOP mode. Then when the button is pressed, the second timer starts counting. In the ISR of the second timer, a variable in incrementing. So when the button is pressed once again, the if statement in the ISR will trigger and change the frequency of the LED. 
 
-### Extra Work
-## Reset Button
-What is a piece of electronics without a reset button? Instead of relying on resetting your processor using the built in reset circuitry, why not instead use another button to reset the rate back to 10Hz.
+### Differences
+There were no differences in this lab that were not found in the previous labs.
 
-## Button Based Hertz
-Most likely using two buttons, what if instead of making a delay loop based on the time, the user could instead enter a mode where the number of times they pressed the button would become the number in Hz of the blinking rate? How do you think you would implement that with just one button?
+##### Extra Work: Reset 
+A reset button was implemeted in the F5529. A button ISR was setup and set the CCR value back to 10Hz. 
+```
+#pragma vector = PORT1_VECTOR               // ISR for Button P1.1
+__interrupt void Port_1(void)
+{
+    TA0CCR0 = 12500; //10Hz reset 
+    P1IFG &= ~(BIT1);
+}
+```   

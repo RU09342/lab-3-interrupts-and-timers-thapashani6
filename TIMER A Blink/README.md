@@ -1,15 +1,81 @@
-# TIMER A Blink
-The TIMER peripherals can be used in many situations thanks to it flexibility in features. For this lab, you will be only scratching the surface as to what this peripheral can do. 
+## Shani Thapa 
+* Uploaded Code at 10/9
+* Populated 10/9
 
-## Up, Down, Continuous 
-There are a few different ways that the timer module can count. For starters, one of the easiest to initialize is Continuous counting where in the TIMER module will alert you when its own counting register overflows. Up mode allows you to utilize a Capture/Compare register to have the counter stop at a particular count and then start back over again. You can also set the TIMER to Up/Down mode where upon hitting a counter or the overflow, instead of setting the counter back to zero, it will count back down to zero. 
+### Code 
+Using Timers adds more complexity to the code. They have thier own version of the ISR code that needs to be added to use them: ```#pragma vector = TIMER0_B0_VECTOR 
+__interrupt void Timer_B (void) ```. First, the interrupts from a specific timer must be enabled. The timer will request an interrupt when it reaches a certin value that can be set by the user. The timer can be then be configured to use a certain clock source, which mode it will run, and be given a clock divider. Once, all these are set, in the timer ISR, the LEDs can be set to blink. 
+* TxxCCTLx is the capture/compare control registor of the timer.  
+  * the x's are simply numbers and letters signifiying the speficic timer and capture/control register.
+  * For example, TA0CCTLO represents Timer0_A and Capture/Control Register 0.  
+* TxxCTL is the timer control, here is where the clock, mode, and clock divider needs to be selected. 
+  * x's specify the timer 
+* TxxCCRx is the timer capture/compare which is the value the timer counts up to
+  * x's specify the timer and register 
+* CCIE means enable interrupt for capture/compare registers
+* TxSSEL_x determines the clock source select which has 4 different clocks determines by its bits
+  * x can be 0, 1, 2, or 3; which represents TACLK, ACLK, SMCLK and INCLK(device specific). 
+* ID_x is the input divider, it simply divides the clock by this amount
+  * x can be 0, 1, 2, or 3; which simply divides the clock rate by 1, 2, 4, 8 respectivly
+* MC_x is the mode control which decides between stop, up, continous, and up/down modes 
+  * x can be 0, 1, 2, or 3; representing Stop, Up, Continuous, and Up/Down mode respectivly
 
-## Task
-Using the TIMER module instead of a software loop, control the speed of two LEDS blinking on your development boards. Experiment with the different counting modes available as well as the effect of the pre-dividers. Why would you ever want to use a pre-divider? What about the Capture and Compare registers? Your code should include a function (if you want, place it in its own .c and .h files) which can convert a desired Hz into the proper values required to operate the TIMER modules.
+#### Differences
+Besides the previous differences encountered in the previous labs, such as the pinouts for the LEDs and buttons; the main distinction were the amount of timers and thier names between the boards. The following is a list and names of all the timers found in the five boards: 
+* Each board had a different amount of timers and seperated into Timer A or B. 
+  * FR2311: Timer0_A, Timer1_A, Timer0_B, Timer2_A, and Timer3_A 
+  * FR6989: Timer0_B and Timer1_B
+  * FR5994: Timer0_A, Timer1_A, Timer2_A,, Timer0_A, Timer3_A, and Timer0_B 
+  * F5529: Timer0_A, Timer1_A, Timer2_A, and Timer0_B. 
+  * G2553: Timer0_A, and Timer1_A 
 
-### Extra Work
-#### Thinking with HALs
-So maybe up to this point you have noticed that your software is looking pretty damn similar to each other for each one of these boards. What if there was a way to abstract away all of the particulars for a processor and use the same functional C code for each board? Just for this simple problem, why don't you try and build a "config.h" file which using IFDEF statements can check to see what processor is on board and initialize particular registers based on that.
+##### Code Differences between G2 and FR2311 
+```
+\\ G2553
+void inittimer(int hertz)       
+{
 
-#### Low Power Timers
-Since you should have already done a little with interrupts, why not build this system up using interrupts and when the processor is basically doing nothing other than burning clock cycles, drop it into a Low Power mode. Do a little research and figure out what some of these low power modes actually do to the processor, then try and use them in your code. If you really want to put your code to the test, using the MSP430FR5994 and the built in super cap, try and get your code to run for the longest amount of time only using that capacitor as your power source.
+    TA0CCTL0 |= CCIE;                             // TBCCR0 interrupt enabled
+    TA0CTL |= TASSEL_2 | MC_1 | ID_3;             // SMCLK/8, Up mode
+    int capture = (125000)/hertz;                 // capture = 125000Hz/10Hz
+    TA0CCR0 = capture;                            // (SMCLK/8)(12500Hz)
+
+}
+#pragma vector = TIMER0_A0_VECTOR   // Timer A1 interrupt service routine
+__interrupt void Timer0_A0 (void)
+
+{   if(timercount >= 100)
+    {
+        P1OUT ^= BIT6;
+        P1OUT ^= BIT0;             // Toggle LEDs
+        timercount = 0;            // reset counter
+    }
+    else
+        timercount++;                 // increment timercount until 100
+}
+
+```
+\\ FR2311
+void inittimer(int hertz)
+{
+
+    TB0CCTL0 |= CCIE;                             // TBCCR0 interrupt enabled
+    TB0CTL |= TBSSEL_2 | MC_1 | ID_3;             // SMCLK/8, Up mode
+    int capture = (125000)/hertz;                 // capture = 125000Hz/10Hz
+    TB0CCR0 = capture;                            // (SMCLK/8)/(12500Hz) 
+
+}
+#pragma vector = TIMER0_B0_VECTOR   // Timer B0 interrupt service routine
+__interrupt void Timer_B (void)
+
+{   if(timercount >= 100)          
+    {
+        P1OUT ^= BIT0;             // Toggle LEDs
+        P2OUT ^= BIT0;
+        timercount = 0;            // reset counter
+    }
+else timercount++;                 // increment timercount until 100
+}
+ 
+
+```
