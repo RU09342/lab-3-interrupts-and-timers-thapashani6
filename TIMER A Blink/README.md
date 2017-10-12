@@ -55,6 +55,7 @@ __interrupt void Timer0_A0 (void)
 }
 
 ```
+```
 \\ FR2311
 void inittimer(int hertz)
 {
